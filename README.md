@@ -1,230 +1,333 @@
-# FixFlow Dashboard — Architecture & Workflow Specification
+# FixFlow :Autonomous Corrective Maintenance System
 
-> **Autonomous Corrective Maintenance & SRE Operations Floor**  
-> *Built for the Razorpay AI Buildathon*
+> **An agentic AI operations console for real-time incident orchestration, multi-agent autonomous troubleshooting, and self-reinforcing knowledge accumulation.**
 
----
+<br/>
 
-## 1. Executive Summary
+<!-- Replace the placeholder below with your architecture diagram image -->
+<img width="922" height="553" alt="fixflow_conslidated_arch drawio" src="https://github.com/user-attachments/assets/725df592-692c-43dc-9175-88a8a7a3db8b" />
 
-The **FixFlow Dashboard** is an agentic AI operations console that unifies real-time incident orchestration, multi-agent autonomous troubleshooting, and human-in-the-loop governance.
 
-At its core, the dashboard visualizes an active software engineering floor powered by **PixiJS 2D rendering**, modeling autonomous agents across specialized engineering pods (Backend, Database, SRE, QA, and Incident Command). The system autonomously classifies incoming alerts using vector cosine similarity, executes remediation playbooks, routes ambiguous issues through approval gates, and continuously writes newly learned solutions back into a vector knowledge base.
-
-```
-+---------------------------------------------------------------------------------------------------+
-|                                      FIXFLOW ARCHITECTURE                                         |
-|                                                                                                   |
-|   [ Ingestion Layer ]                                                                             |
-|   - Jira Webhooks                                                                                 |
-|   - Client Visiting Hall                                                                          |
-|   - POST /fixflow/intake                                                                          |
-|              │                                                                                    |
-|              ▼                                                                                    |
-|   [ Semantic Engine ] ────► Embedding (1536-dim) ────► pgvector Knowledge Index (Cosine Sim)      |
-|                                                                    │                              |
-|                                                                    ▼                              |
-|   [ Tri-Route Decision Engine ] ◄──────────────────────────────────┘                              |
-|         │                                │                                │                       |
-|         ▼ (≥ 0.85)                       ▼ (0.55 – 0.84)                  ▼ (< 0.55)              |
-|     KNOWN ROUTE                      MID-LEVEL ROUTE                  UNKNOWN NOVEL ROUTE         |
-|     - Autonomous Playbook            - Multi-Candidate Analysis       - Multi-Agent Deep Collab   |
-|     - 1.88s Remediation              - Human Approval Gate            - Root-Cause Hypothesis     |
-|     - 5-Point Verification           - David Review Modal             - Elena QA Verification     |
-|              │                                │                                │                  |
-|              └────────────────────────────────┼────────────────────────────────┘                  |
-|                                               ▼                                                   |
-|                        [ Closed-Loop Knowledge Writeback (KB-1250) ]                              |
-|                                               │                                                   |
-|                                               ▼                                                   |
-|                       [ PixiJS 2D Operations Floor & Activity Feed ]                              |
-+---------------------------------------------------------------------------------------------------+
-```
+<br/>
 
 ---
 
-## 2. PixiJS 2D Operations Floor Topography
+## Table of Contents
 
-The operations floor provides spatial observability of an engineering team. Rather than static progress bars, incidents trigger pathfinding, desk-to-desk collaboration, and visual status badges.
+- [Overview](#overview)
+- [Live Demo](#live-demo)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Agent Roster](#agent-roster)
+- [Incident Lifecycle](#incident-lifecycle)
+- [Scenarios](#scenarios)
+- [Execution Modes](#execution-modes)
+- [Terminal Interface](#terminal-interface)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [License](#license)
 
-### 2.1 Autonomous Agent Pods & Personas
+---
 
-| Pod | Member | Role | Primary Responsibility |
+## Overview
+
+FixFlow is a production-grade agentic AI system that autonomously classifies, triages, and resolves software maintenance incidents. It eliminates repetitive manual effort by routing incoming issues through a three-tier decision engine backed by semantic vector similarity search, and continuously improves itself by writing every resolved solution back into a living knowledge base.
+
+The system is visualised through a real-time **PixiJS 2D operations floor** — a spatial representation of an engineering team where autonomous agents walk between desks, collaborate in real time, and execute remediation playbooks in full view.
+
+**The core loop:**
+
+```
+Incident arrives → Semantic classification → Agent routing → Autonomous resolution → Knowledge writeback → Next incident resolved faster
+```<img width="1228" height="713" alt="Screenshot 2026-09-04 at 11 25 59 PM" src="https://github.com/user-attachments/assets/0cd457a3-f77d-4766-9bb4-80bc1723b600" />
+---
+
+## Live Demo
+
+<h1>
+    Known Issue
+     <img width="1228" height="713" alt="Screenshot 2026-09-04 at 11 24 04 PM" src="https://github.com/user-attachments/assets/668b6949-6c77-4f88-879d-414976b86fdb" />  
+</h1>
+
+<h2>
+    Mid-Level Issue
+    <img width="1228" height="713" alt="Screenshot 2026-09-04 at 11 26 35 PM" src="https://github.com/user-attachments/assets/f251d965-6fb4-47ee-b8e5-8b4d9b129a8e" />
+</h2>
+
+<h3>
+    UnKnown Issue
+<img width="1228" height="713" alt="Screenshot 2026-09-04 at 11 29 03 PM" src="https://github.com/user-attachments/assets/aa364aab-960d-4c01-ba60-b43c50d3b605" />
+
+    
+</h3>
+## Key Features
+
+- **Tri-route semantic classification** — cosine similarity over 1,536-dimensional embeddings routes every incident to the correct agent tier automatically
+- **Three autonomous agent tiers** — Known (≥ 0.85), Mid-level (0.55–0.84), Unknown (< 0.55) with distinct resolution strategies per tier
+- **Human-in-the-loop governance** — approval gate modal prevents unsafe automated patches on ambiguous production-critical incidents
+- **Self-reinforcing knowledge base** — every resolved incident is embedded and written back to pgvector, making the next classification more accurate
+- **5-point health verification** — post-patch probes confirm process alive, HTTP 200, port connectivity, error rate, and SLA latency before closing
+- **PixiJS 2D operations floor** — spatial observability with agent pathfinding, desk-to-desk collaboration, and live status beacons
+- **Retro CLI terminal** — `jira`, `diagnose`, `status` commands for read-only ticket inspection and floor navigation
+- **Evidence provenance** — every automated action carries a full audit trail: vector match distance, executed commands, human approver sign-off
+- **Dual execution modes** — zero-dependency simulation for demos, live Docker mode for production pipelines
+- **Graceful failure handling** — insufficient confidence triggers `HUMAN REVIEW REQUIRED` rather than unsafe automation
+
+---
+
+## System Architecture
+
+> Architecture diagram embedded below. See `docs/architecture.png` for the full-resolution export.
+
+<!-- Replace with your actual architecture image -->
+```
+[ Ingestion Layer ]
+  Jira Webhooks · Client Dispatch · POST /fixflow/intake
+              │
+              ▼
+[ Semantic Engine ]
+  Embedding (1536-dim) → pgvector Knowledge Index (Cosine Similarity)
+              │
+              ▼
+[ Tri-Route Decision Engine ]
+    │                  │                    │
+    ▼ (≥ 0.85)         ▼ (0.55 – 0.84)      ▼ (< 0.55)
+KNOWN ROUTE        MID-LEVEL ROUTE       UNKNOWN ROUTE
+Auto playbook      Human approval gate   Multi-agent collab
+1.88s remediation  Candidate analysis    Root-cause hypothesis
+5-point verify     David review modal    Elena QA sign-off
+    │                  │                    │
+    └──────────────────┼────────────────────┘
+                       ▼
+        [ KB Writeback — Closed Learning Loop ]
+                       │
+                       ▼
+        [ PixiJS 2D Operations Floor ]
+```
+
+---
+
+## Agent Roster
+
+| Pod | Agent | Role | Responsibility |
 |:---|:---|:---|:---|
-| **Incident Command** | **Elena Rodriguez** | Principal Commander / Lead | Global triage, emergency override, and final QA verification. |
-| **Backend & Core API** | **David Chen** | Senior Backend Engineer | Known playbook execution, microservice hotfixes, and patch deployment. |
-| **Backend Services** | **Daniel Vance** | Backend Associate | API gateway traffic validation and endpoint integrity. |
-| **Database & Cache** | **Arjun Mehta** | Staff Database Specialist | Connection pool tuning, query locks, and deadlock resolution. |
-| **Database Infra** | **Sofia Silva** | Data Infrastructure Eng. | Replication lag inspection, buffer cache, and disk IOPS analysis. |
-| **SRE & Reliability** | **Marcus Lee** | Tier-3 Reliability Engineer | Root-cause hypothesis generation, distributed tracing, and telemetry. |
-| **Platform Ops** | **Noah Kim** | Site Reliability Engineer | Network socket probing, DNS health, and container orchestration. |
-| **QA & Verification** | **Maya Patel** | QA Automation Lead | Automated regression test suites and end-to-end service probes. |
-| **Platform Governance**| **Ananya Ray** | SRE Compliance Eng. | SLA validation, audit logging, and change-safety verification. |
-| **Knowledge Systems** | **Priya Sharma** | Knowledge Systems Curator | Vector solution extraction, KB enrichment, and continuous learning. |
-| **External Wing** | **Client Visitor** | Enterprise Client Rep | Dispatches urgent maintenance tickets from the Reception Wing. |
-
-### 2.2 Floor Zones & Landmarks
-1. **Reception & Client Visiting Hall (Left Wing)**: Includes the Client Desk, visiting chairs, and an animated envelope dispatch mechanic (`sendClientMail`) representing incoming enterprise client tickets.
-2. **Engineering Pod Clusters (Center)**: Desk stations with dual monitors, swivel chairs, and status LED beacons.
-3. **DevOps Server Rack Wing (Top Center)**: Dynamic blinking LED server racks (`devops_infra`) that indicate CPU and memory load spikes.
-4. **Collaboration Area (Bottom Center)**: A dedicated meeting and whiteboard area where agents walk to execute cross-pod investigations.
+| Incident Command | Elena Rodriguez | Principal Commander | Global triage, emergency override, final QA sign-off |
+| Backend & Core API | David Chen | Senior Backend Engineer | Known playbook execution, microservice hotfixes |
+| Backend Services | Daniel Vance | Backend Associate | API gateway validation, endpoint integrity |
+| Database & Cache | Arjun Mehta | Staff Database Specialist | Connection pool tuning, deadlock resolution |
+| Database Infra | Sofia Silva | Data Infrastructure Engineer | Replication lag, buffer cache, disk IOPS |
+| SRE & Reliability | Marcus Lee | Tier-3 Reliability Engineer | Root-cause hypothesis, distributed tracing |
+| Platform Ops | Noah Kim | Site Reliability Engineer | Network probing, DNS health, container ops |
+| QA & Verification | Maya Patel | QA Automation Lead | Regression suites, end-to-end service probes |
+| Platform Governance | Ananya Ray | SRE Compliance Engineer | SLA validation, audit logging, change safety |
+| Knowledge Systems | Priya Sharma | Knowledge Systems Curator | Vector extraction, KB enrichment, learning loop |
+| External Wing | Client Visitor | Enterprise Client Rep | Dispatches urgent tickets from Reception Wing |
 
 ---
 
-## 3. The 8-Stage Incident Lifecycle Pipeline
+## Incident Lifecycle
 
-Every incident processed by FixFlow advances through eight deterministic lifecycle stages:
+Every incident advances through eight deterministic stages:
 
-```mermaid
-flowchart LR
-    S1[1. Ingest] --> S2[2. Similarity]
-    S2 --> S3[3. Hypothesis]
-    S3 --> S4[4. Playbook]
-    S4 --> S5[5. Patching]
-    S5 --> S6[6. Verification]
-    S6 --> S7[7. Resolution]
-    S7 --> S8[8. KB Writeback]
+```
+1. Ingest → 2. Similarity → 3. Hypothesis → 4. Playbook
+                                                  │
+8. KB Writeback ← 7. Resolution ← 6. Verification ← 5. Patching
 ```
 
-### Stage Breakdown
-1. **`ingest` (Incident Intake)**: Payload validated via Jira webhook, monitoring alert, or internal client dispatch. Normalized to `{ id, title, service, priority, raw_logs }`.
-2. **`similarity` (Semantic Search)**: Query vector generated and compared against pgvector knowledge store using cosine similarity (`1 - (embedding <=> query)`).
-3. **`hypothesis` (AI Diagnostic Engine)**: For non-trivial incidents, the LLM analyzes stack traces, error codes, and telemetry to generate root-cause hypotheses.
-4. **`playbook` (Remediation Matching)**: Selects matching remediation runbook (e.g., `VPN-AUTH-01`, `DB-POOL-RESIZE`, `DEADLOCK-BREAK-TX`).
-5. **`patching` (Execution & Deployment)**: Automated script execution, configuration rollback, or service restart applied to target pods.
-6. **`verification` (5-Point Health Probe)**:
-   * **Probe 1**: Service process alive.
-   * **Probe 2**: HTTP health endpoint returns `200 OK`.
-   * **Probe 3**: Port connectivity (e.g., port `5432` for PostgreSQL).
-   * **Probe 4**: Error rate dropped below 0.01%.
-   * **Probe 5**: SLA latency restored within target threshold (< 200ms).
-7. **`resolution` (Incident Closure)**: Status transitioned to `RESOLVED`, Jira ticket marked `Done`, and celebration broadcast sent to floor agents.
-8. **`kb_writeback` (Continuous Learning)**: New resolution vector, execution summary, and author metadata stored in `knowledge_base` table.
+| Stage | Name | What Happens |
+|:---:|:---|:---|
+| 1 | **Ingest** | Payload normalised from Jira webhook, monitoring alert, or client dispatch |
+| 2 | **Similarity** | Query vector compared against pgvector store via cosine similarity |
+| 3 | **Hypothesis** | LLM analyses stack traces and telemetry to generate root-cause candidates |
+| 4 | **Playbook** | Matching remediation runbook selected (`VPN-AUTH-01`, `DB-POOL-RESIZE`, etc.) |
+| 5 | **Patching** | Automated script execution, config rollback, or service restart applied |
+| 6 | **Verification** | 5-point health probe: process alive · HTTP 200 · port open · error rate · latency |
+| 7 | **Resolution** | Status → `RESOLVED`, Jira → `Done`, celebration broadcast to floor agents |
+| 8 | **KB Writeback** | Resolution vector + execution summary stored in `knowledge_base` table |
 
 ---
 
-## 4. Scenario Simulation Engine
+## Scenarios
 
-The dashboard features five pre-configured scenarios accessible from the floor control bar:
+Five pre-configured scenarios demonstrate the full system capability:
 
-### Scenario 1: Known Incident (`1 · Known`)
-* **Incident**: `INC-1042 — VPN Gateway Authentication Timeout`
-* **Severity**: `P2` | **Initial Similarity**: `0.94`
-* **Behavior**: Full autonomous remediation. David Chen alerts immediately, walks to the server rack, applies playbook `VPN-AUTH-01`, passes health probes in `1.88s`, and celebrates.
-* **Key Demonstration**: Extreme MTTR reduction without requiring human intervention.
+### `1` — Known Incident
+**`INC-1042 — VPN Gateway Authentication Timeout`** · P2 · Similarity: `0.94`
 
-### Scenario 2: Mid-Level Incident (`2 · Mid`)
-* **Incident**: `EPL-1067 — Database Connection Pool Exhaustion`
-* **Severity**: `P1` | **Initial Similarity**: `0.78`
-* **Behavior**: Ambiguous similarity falls into human triage band ($0.55 \le \text{score} < 0.85$). David investigates DB locks and opens an interactive **Developer Approval Gate Modal**. Once the human operator clicks **Approve**, the pool resizing patch applies, verification completes, and the incident closes.
-* **Key Demonstration**: Safe human-in-the-loop control for production-critical mutations.
-
-### Scenario 3: Novel Unknown Incident (`3 · Unknown`)
-* **Incident**: `EPL-1088 — Cross-Cluster Distributed Lock Deadlock`
-* **Severity**: `P1` | **Initial Similarity**: `0.41`
-* **Behavior**: Low similarity prevents automated playbook execution. Marcus Lee (SRE) and Arjun Mehta (DB) walk to the collaboration area, run distributed lock tracing, hypothesize lock-order inversion, and dispatch Elena Rodriguez for QA sign-off. Elena approves, patch applies, and the system synthesizes **`KB-1250`**.
-* **Key Demonstration**: Multi-agent cross-functional synthesis and autonomous knowledge extraction.
-
-### Scenario 4: Graceful Failure (`4 · Fail`)
-* **Incident**: `EPL-1099 — Anomaly in Cryptographic Signature Exchange`
-* **Severity**: `P1` | **Initial Similarity**: `0.28`
-* **Behavior**: Confidence is too low to safely automate (`INSUFFICIENT EVIDENCE`). FixFlow refuses blind automation, marks stage as `HUMAN REVIEW REQUIRED`, and assigns Sofia & Marcus to conduct manual forensics.
-* **Key Demonstration**: Hallucination-prevention and safety-first enterprise resilience.
-
-### Scenario 5: Closed-Loop Replay (`↻ Replay`)
-* **Incident**: Re-ingests the exact deadlock from Scenario 3 (`EPL-1088`).
-* **Behavior**: Because `KB-1250` was generated and indexed, the similarity score jumps from **`0.41` $\rightarrow$ `0.94`**. The incident now follows the **Known Route** and auto-resolves in seconds.
-* **Key Demonstration**: The system demonstrably gets smarter over time.
+David Chen auto-remediates using playbook `VPN-AUTH-01`. All 5 health probes pass in 1.88 seconds. No human intervention required. Demonstrates maximum MTTR reduction.
 
 ---
 
-## 5. Dual Execution Modes
+### `2` — Mid-Level Incident
+**`EPL-1067 — Database Connection Pool Exhaustion`** · P1 · Similarity: `0.78`
 
-The dashboard supports two interchangeable execution modes via the floor control bar toggle:
-
-### 5.1 Simulation Mode (Default)
-* **Target Audience**: Demonstrations, buildathon judging, and offline testing.
-* **Dependencies**: Zero external dependencies (no Docker, no live Jira, no live databases required).
-* **Guarantees**: Deterministic execution, immediate response times, complete visual animations, and safety against network dropouts.
-
-### 5.2 Live Execution Mode
-* **Target Audience**: Production environments and live Docker pipeline integration.
-* **Dependencies**:
-  * Self-hosted n8n container (`docker compose up -d`).
-  * Supabase project with `pgvector` extension and table `workflow_events`.
-  * Atlassian Jira workspace with API token.
-* **Mechanism**:
-  * Subscribes to Supabase real-time websocket channel `workflow-events-realtime`.
-  * Polls and proxies Jira REST API via secure Next.js server-side route `/api/jira/ticket`.
-  * Reflects actual external webhook triggers directly onto the 2D floor.
+Falls into the human triage band. David investigates DB locks and surfaces an **Approval Gate Modal**. Once the operator approves, pool resize applies and the incident closes. Demonstrates safe human-in-the-loop control for production mutations.
 
 ---
 
-## 6. Read-Only JIRA Diagnostic Terminal
+### `3` — Unknown Novel Incident
+**`EPL-1088 — Cross-Cluster Distributed Lock Deadlock`** · P1 · Similarity: `0.41`
 
-The dashboard includes a retro hacker CLI accessible via the **`>_ Terminal`** button.
+Marcus Lee and Arjun Mehta walk to the collaboration zone, run distributed lock tracing, hypothesise lock-order inversion, and request Elena's QA sign-off. Resolution synthesises **`KB-1250`** — a new knowledge base entry. Demonstrates multi-agent cross-functional collaboration and autonomous knowledge extraction.
 
-### Supported Commands
+---
 
-| Command Syntax | Description |
+### `4` — Graceful Failure
+**`EPL-1099 — Cryptographic Signature Exchange Anomaly`** · P1 · Similarity: `0.28`
+
+Confidence too low for safe automation. FixFlow marks stage as `HUMAN REVIEW REQUIRED` and assigns Sofia and Marcus to manual forensics. Demonstrates hallucination prevention and enterprise safety resilience.
+
+---
+
+### `↻` — Closed-Loop Replay
+Re-ingests the deadlock from Scenario 3. Because `KB-1250` was indexed, similarity jumps **`0.41 → 0.94`**. The incident now follows the Known Route and auto-resolves in seconds. Demonstrates the system demonstrably improving over time through knowledge accumulation.
+
+---
+
+## Execution Modes
+
+### Simulation Mode *(default)*
+
+Zero external dependencies. No Docker, no live Jira, no database required. Deterministic execution with full visual animations. Designed for offline demonstrations, judging, and development.
+
+### Live Execution Mode
+
+Full production pipeline via Docker Compose.
+
+**Dependencies:**
+- Self-hosted n8n container
+- Supabase project with `pgvector` extension and `workflow_events` table
+- Atlassian Jira workspace with API token
+
+**Mechanism:**
+- Subscribes to Supabase real-time websocket channel `workflow-events-realtime`
+- Proxies Jira REST API via secure Next.js server-side route `/api/jira/ticket`
+- Reflects live external webhook triggers directly onto the 2D operations floor
+
+---
+
+## Terminal Interface
+
+Access the retro CLI via the **`>_ Terminal`** button on the operations floor.
+
+```bash
+# Retrieve ticket diagnostic card and timeline
+jira EPL-1088
+ticket EPL-1088
+
+# Run full root-cause diagnostic report
+diagnose EPL-1088
+
+# List all available scenarios
+scenarios
+
+# Show system health, active mode, and floor state
+status
+
+# Clear terminal buffer
+clear
+
+# Print command reference
+help
+```
+
+Every diagnostic output includes:
+- Ticket summary: key, status, priority, reporter, assignee, similarity score, tri-route badge
+- Numbered root-cause findings and telemetry anomalies
+- Chronological event trace with provenance badges: `[JIRA]` `[FixFlow]` `[SRE]` `[QA]`
+- `[ VIEW ON FLOOR ]` — loads ticket into 2D floor context without triggering re-execution
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
 |:---|:---|
-| `jira <TICKET_ID>` | Retrieves diagnostic card and timeline for the ticket. |
-| `ticket <TICKET_ID>` | Alias for `jira <TICKET_ID>`. |
-| `diagnose <TICKET_ID>` | Runs full diagnostic report on the ticket. |
-| `scenarios` | Lists all 5 guided demonstration scenarios. |
-| `status` | Shows system health, active mode, and floor state. |
-| `clear` | Clears terminal scroll buffer. |
-| `help` | Prints available command reference. |
-
-### Diagnostic Output Structure
-1. **Summary Header**: Ticket key, status, priority, reporter, assigned agent, similarity score, and tri-route decision badge.
-2. **Diagnostic Findings**: Numbered root cause observations and telemetry anomalies.
-3. **Chronological Timeline**: Ordered event trace with provenance source badges (`[JIRA]`, `[FixFlow]`, `[SRE]`, `[QA]`).
-4. **Interactive Action**: `[ VIEW ON FLOOR ]` button loads the ticket directly into the 2D floor context for visual analysis without triggering destructive loops.
+| Operations floor rendering | PixiJS 2D |
+| Frontend framework | Next.js 14 |
+| Workflow orchestration | n8n (self-hosted) |
+| AI classification | Gemini / OpenAI Embeddings |
+| Vector knowledge base | Supabase + pgvector |
+| Ticketing integration | Jira Cloud REST API v3 |
+| Containerisation | Docker + Docker Compose |
+| Scheduling | macOS crontab / node-cron |
+| Realtime events | Supabase Realtime Websockets |
 
 ---
 
-## 7. Evidence Provenance & Inspectability
+## Getting Started
 
-To maintain audit compliance, every action taken by an agent can be traced back to raw data:
+### Prerequisites
 
-* **Live Activity Panel**: Dual-tab drawer providing both an instant chronological event feed and an **Evidence Provenance Tab**.
-* **Provenanced Telemetry**: Stack traces, error logs, vector match distances, executed bash/Ansible commands, and human approver sign-offs are captured in real-time.
-* **Human Drawer**: Clicking any agent on the floor reveals their current active incident, state history, assigned tasks, and performance metrics.
+- Docker and Docker Compose
+- Node.js 18+ and npm
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/fixflow.git
+cd fixflow
+```
+
+### 2. Configure environment variables
+
+```bash
+cp .env.example .env
+# Edit .env with your credentials — see Environment Variables below
+```
+
+### 3. Start the orchestration engine
+
+```bash
+docker compose up -d
+```
+
+### 4. Launch the dashboard
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to access the FixFlow Autonomous Operations Floor.
+
+### 5. Run simulation (no external dependencies needed)
+
+On the operations floor, click any scenario button (`1 · Known`, `2 · Mid`, `3 · Unknown`, `4 · Fail`, `↻ Replay`) to begin. No Jira or Supabase connection required in simulation mode.
 
 ---
 
-## 8. Docker Deployment & Local Setup
+## Environment Variables
 
-### 8.1 Prerequisites
-* Docker & Docker Compose
-* Node.js 18+ & npm
+Create a `.env` file in the project root:
 
-### 8.2 Environment Configuration
-Create `.env` in the root directory:
 ```env
-# AI & Vector Embeddings
+# AI Embeddings
 GEMINI_API_KEY=your_gemini_or_openai_key
 
-# Supabase Database & Realtime
+# Supabase — Vector DB and Realtime
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your_supabase_service_role_key
 
-# Jira Cloud Integration (Read-Only Diagnostics & Webhooks)
+# Jira Cloud — Read-only diagnostics and webhook ingestion
 JIRA_BASE_URL=https://yourcompany.atlassian.net
 JIRA_EMAIL=your-email@company.com
 JIRA_API_TOKEN=your_atlassian_api_token
 JIRA_PROJECT_KEY=MAINT
 ```
 
-### 8.3 Starting the Full Stack
-```bash
-# 1. Start the n8n orchestration engine
-docker compose up -d
+> **Security note:** Never commit `.env` to version control. Add it to `.gitignore`. Run `chmod 600 .env` to restrict file permissions.
+---
+## License
 
-# 2. Launch the Next.js interactive dashboard
-cd dashboard
-npm install
-npm run dev
-```
-Open **`http://localhost:3000`** to access the FixFlow Autonomous Operations Floor.
+MIT License — see [LICENSE](./LICENSE) for details.
+
+---
+
+<p align="center">
+  Built with precision · Designed for autonomy · Gets smarter with every incident
+</p>
