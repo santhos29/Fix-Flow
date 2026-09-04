@@ -1,0 +1,143 @@
+{
+  "name": "FixFlow — F: Scheduled Regression Test",
+  "_description": "Runs daily at 2 AM IST. Classifies all golden test cases and logs accuracy. Alerts if below 90%.",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 20 * * *" }] } },
+      "id": "cron",
+      "name": "Daily 2AM IST (8:30PM UTC)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/test_cases?select=*",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        }
+      },
+      "id": "fetch-cases",
+      "name": "Fetch Test Cases",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [420, 300]
+    },
+    {
+      "parameters": { "fieldToSplitOut": "=", "options": {} },
+      "id": "split",
+      "name": "Split Into Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [{\n      \"text\": \"={{ $json.title + ': ' + $json.description }}\"\n    }]\n  },\n  \"output_dimensionality\": 1536\n}"
+      },
+      "id": "embed-case",
+      "name": "Embed Test Case (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/match_issues",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"query_embedding\":{{ $json.embedding.values }},\"match_threshold\":0.55,\"match_count\":1}"
+      },
+      "id": "vector-search",
+      "name": "Vector Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json;\nconst testCase = $('Split Into Items').first().json;\nconst topScore = results.length > 0 ? results[0].similarity : 0;\nlet actual;\nif (topScore >= 0.85) actual = 'known';\nelse if (topScore >= 0.65) actual = 'mid';\nelse actual = 'unknown';\nconst passed = actual === testCase.expected_agent;\nreturn [{ json: { test_case_id: testCase.id, expected: testCase.expected_agent, actual, score: topScore, passed } }];"
+      },
+      "id": "evaluate",
+      "name": "Evaluate Result",
+      "type": "n8n-nodes-base.code",
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const all = $input.all();\nconst total = all.length;\nconst correct = all.filter(i => i.json.passed).length;\nconst accuracy = correct / total;\nconst details = all.map(i => i.json);\nreturn [{ json: { total_cases: total, correct_count: correct, accuracy, details, triggered_by: 'cron' } }];"
+      },
+      "id": "aggregate",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/regression_results",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"total_cases\":{{ $json.total_cases }},\"correct_count\":{{ $json.correct_count }},\"details\":{{ JSON.stringify($json.details) }},\"triggered_by\":\"cron\"}"
+      },
+      "id": "save-results",
+      "name": "Save Regression Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1740, 300]
+    },
+    {
+      "parameters": {
+        "conditions": { "number": [{ "value1": "={{ $json.accuracy }}", "operation": "smaller", "value2": 0.9 }] }
+      },
+      "id": "check-threshold",
+      "name": "Accuracy Below 90%?",
+      "type": "n8n-nodes-base.if",
+      "position": [1960, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"text\":\"ALERT: FixFlow classifier accuracy dropped to {{ ($json.accuracy * 100).toFixed(1) }}% ({{ $json.correct_count }}/{{ $json.total_cases }}). Review knowledge base immediately.\"}"
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2180, 200]
+    }
+  ],
+  "connections": {
+    "Daily 2AM IST (8:30PM UTC)": { "main": [[{ "node": "Fetch Test Cases" }]] },
+    "Fetch Test Cases": { "main": [[{ "node": "Split Into Items" }]] },
+    "Split Into Items": { "main": [[{ "node": "Embed Test Case (Gemini)" }]] },
+    "Embed Test Case (Gemini)": { "main": [[{ "node": "Vector Search" }]] },
+    "Vector Search": { "main": [[{ "node": "Evaluate Result" }]] },
+    "Evaluate Result": { "main": [[{ "node": "Aggregate Results" }]] },
+    "Aggregate Results": { "main": [[{ "node": "Save Regression Results" }]] },
+    "Save Regression Results": { "main": [[{ "node": "Accuracy Below 90%?" }]] },
+    "Accuracy Below 90%?": { "main": [[{ "node": "Slack Alert" }], []] }
+  }
+}

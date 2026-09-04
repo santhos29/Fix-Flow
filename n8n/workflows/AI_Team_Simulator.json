@@ -1,0 +1,294 @@
+{
+  "id": "sImUlaTeTeAmFlOw",
+  "name": "FixFlow — AI Software Team Simulator",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c074f08d-6984-4b0d-be9d-b96db508f86b",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -400,
+        300
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b31dbc76-c185-4ff4-9314-bb9f875943ea",
+      "name": "Daily Schedule (6 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -400,
+        520
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Hardcoded Scenarios carefully engineered for perfect status distribution ──\nconst scenarios = [\n  // 1. KNOWN (auto-solved: yield >85% similarity score)\n  { cat: 'known', base: 'Login service timeout', ctx: 'Users are unable to login, requests timeout after 30 seconds' },\n  { cat: 'known', base: 'Payment gateway 500 error', ctx: 'Payment processing returns 500 Internal Server Error' },\n  { cat: 'known', base: 'Email notifications not sending', ctx: 'System emails (password reset, alerts) not being delivered' },\n  { cat: 'known', base: 'API rate limit 429 errors', ctx: 'Third-party API calls returning 429 Too Many Requests' },\n  { cat: 'known', base: 'Memory leak in worker service', ctx: 'Worker pod memory usage grows unbounded, OOMKilled after 6h' },\n\n  // 2. MID (assigned to dev with tips: yield 55% - 85% similarity score)\n  { cat: 'database', base: 'Database deadlock during concurrent batch checkout', ctx: 'Postgres row-level locks and transaction rollbacks during bulk order processing' },\n  { cat: 'frontend', base: 'Auth token refresh race-condition causing random 401 logouts', ctx: 'Concurrent API requests during token expiry cause double refresh, invalidating sessions' },\n  { cat: 'devops', base: 'Kubernetes Pod OOMKilled crash loop on image-processor', ctx: 'Memory leak in sharp image resize module during parallel uploads under 300 concurrent requests' },\n  { cat: 'ui', base: 'React re-render infinite loop in Safari 17 checkout cart', ctx: 'Infinite hooks dispatch loop from missing dependency array in useMemo causing browser freeze' },\n  // 3. UNKNOWN (escalated to Jira: yield <55% similarity score)\n  { cat: 'unknown', base: 'Breakroom coffee machine water leak disaster', ctx: 'The primary office coffee maker is leaking gallons of hot water all over the breakroom kitchen floor' },\n  { cat: 'unknown', base: 'Conference room furniture broken and damaged', ctx: 'Multiple mesh chairs are broken and the conference room whiteboard has permanent stains' },\n  { cat: 'unknown', base: 'Lost physical RFID parking garage keycard', ctx: 'An employee lost their plastic parking garage pass and needs a replacement card issued by building management' }\n];\n\nconst team = [\n  'Sanjay Dutt (DB Architect) <sanjay.d@fixflow.co>',\n  'Rajesh Kumar (API Engineer) <rajesh.k@fixflow.co>',\n  'Chloe Dupont (DevOps Lead) <chloe.d@fixflow.co>',\n  'Elena Rostova (UI/UX Dev) <elena.r@fixflow.co>',\n  'Marcus Vance (Frontend Eng) <marcus.v@fixflow.co>',\n  'Alex Mercer (Product Manager) <alex.mercer@fixflow.co>',\n  'Sarah Jenkins (QA Tester) <sarah.j@fixflow.co>',\n  'Daniel Park (SDET) <daniel.p@fixflow.co>'\n];\n\n// 2 clients\nconst clients = [\n  { name: 'Jane Miller', email: 'client.jane@retailcorp.com', role: 'Store Manager' },\n  { name: 'Robert Chen', email: 'client.robert@retailcorp.com', role: 'Regional Operations Director' }\n];\n\nconst output = [];\n\n// To ensure a perfect distribution, we explicitly generate:\n// - 2 Known tickets (auto-solved)\n// - 1 Mid ticket (assigned with KB tips)\n// - 2 Unknown tickets (critical facilities/unrelated to code)\nconst selections = [\n  // 2 Known\n  scenarios.filter(s => s.cat === 'known')[Math.floor(Math.random() * 5)],\n  scenarios.filter(s => s.cat === 'known')[Math.floor(Math.random() * 5)],\n  // 1 Mid\n  scenarios.filter(s => ['database', 'frontend', 'devops', 'ui'].includes(s.cat))[Math.floor(Math.random() * 4)],\n  // 2 Unknown\n  scenarios.filter(s => s.cat === 'unknown')[Math.floor(Math.random() * 3)],\n  scenarios.filter(s => s.cat === 'unknown')[Math.floor(Math.random() * 3)]\n];\n\n// Shuffle selections to simulate organic ticket submission order\nconst shuffledSelections = selections.sort(() => Math.random() - 0.5);\n\nfor (let i = 0; i < 5; i++) {\n  const s = shuffledSelections[i];\n  const shuffledTeam = [...team].sort(() => Math.random() - 0.5);\n  const participants = shuffledTeam.slice(0, 3).join(', ');\n  \n  const randId = Math.random().toString(36).substring(2, 8).toUpperCase();\n  const timestamp = Date.now().toString().slice(-6);\n  const orderNum = 'ORD-' + Math.floor(100000 + Math.random() * 900000);\n  const uuidSample = 'usr_' + Math.floor(10000 + Math.random() * 90000);\n  const port = Math.floor(3000 + Math.random() * 6000);\n\n  // Pick reporter\n  let reporter = '';\n  if (s.cat === 'unknown' || Math.random() > 0.5) {\n    const cl = clients[Math.floor(Math.random() * clients.length)];\n    reporter = cl.name + ' (' + cl.role + ') <' + cl.email + '>';\n  } else {\n    reporter = team[Math.floor(Math.random() * team.length)];\n  }\n\n  let prompt = '';\n  \n  if (s.cat === 'known') {\n    // For KNOWN, Gemini must yield the EXACT title and context to hit the >85% threshold\n    prompt = 'You are simulating an incident generator. Return a JSON object with exactly these fields:\\n'\n      + '1. \"title\": \"' + s.base + '\"\\n'\n      + '2. \"description\": \"' + s.ctx + '\"\\n'\n      + '3. \"reporter\": \"' + reporter + '\"\\n'\n      + '4. \"source\": \"webhook\"\\n\\n'\n      + 'Return ONLY valid JSON. No markdown wrapper.';\n  } else {\n    // For Mid and Unknown, Gemini generates unique specific details\n    prompt = 'You are an advanced AI software team simulator. Generate a HIGHLY realistic bug report.\\n\\n'\n      + '### SCENARIO:\\n'\n      + '- Category: ' + s.cat + '\\n'\n      + '- Base Concept: ' + s.base + '\\n'\n      + '- Context: ' + s.ctx + '\\n\\n'\n      + '### UNIQUE PARAMETERS:\\n'\n      + '- Session ID: ' + randId + '\\n'\n      + '- Reference Code: ' + orderNum + '\\n'\n      + '- User ID: ' + uuidSample + '\\n'\n      + '- Port: ' + port + '\\n'\n      + '- Timestamp: ' + timestamp + '\\n\\n'\n      + '### TEAM INVOLVED:\\n' + participants + '\\n\\n'\n      + '### INSTRUCTIONS:\\n'\n      + 'Generate a JSON object with exactly these 4 fields:\\n'\n      + '1. \"title\": A professional, highly specific, and mathematically unique Jira-style bug title with [Category] prefix. Example: \"[Facilities] ' + s.base + ' for reference ' + randId + '\"\\n'\n      + '2. \"description\": A RICH description (500-1500 chars) that includes:\\n'\n      + '   - A simulated discussion conversation referencing the parameters ' + randId + ', ' + orderNum + ', and ' + uuidSample + '.\\n'\n      + '   - Specific steps to reproduce.\\n'\n      + '   - Error messages or stack trace logs containing unique transaction ID ' + randId + '.\\n'\n      + '3. \"reporter\": \"' + reporter + '\"\\n'\n      + '4. \"source\": \"webhook\"\\n\\n'\n      + 'Return ONLY valid JSON. No markdown wrapping.';\n  }\n\n  const geminiBody = {\n    contents: [{ parts: [{ text: prompt }] }],\n    generationConfig: {\n      responseMimeType: 'application/json',\n      responseSchema: {\n        type: 'OBJECT',\n        properties: {\n          title: { type: 'STRING' },\n          description: { type: 'STRING' },\n          reporter: { type: 'STRING' },\n          source: { type: 'STRING' }\n        },\n        required: ['title', 'description', 'reporter', 'source']\n      },\n      temperature: 0.95\n    }\n  };\n\n  output.push({ json: { geminiBody, category: s.cat, incidentNum: i + 1 } });\n}\n\nreturn output;"
+      },
+      "id": "b4087513-1e9d-4389-96e8-eb8ff3a7949f",
+      "name": "Generate 5 Scenarios",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -100,
+        300
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "aa015512-3070-48cd-817d-42f594a28cc9",
+      "name": "Process One at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        180,
+        300
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA3Vw4yBx2Q22p8C2XoMVRgLY4G-mbQdQU",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiBody) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "84bdce4f-d494-42eb-9627-5095fb4bddb4",
+      "name": "Call Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        460,
+        300
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nlet text = '';\nif (resp.candidates && resp.candidates[0] && resp.candidates[0].content) {\n  text = resp.candidates[0].content.parts[0].text;\n}\ntext = text.trim();\nif (text.startsWith('```')) {\n  text = text.replace(/^```json?\\n?/, '').replace(/\\n?```$/, '');\n}\ntext = text.trim();\nconst bug = JSON.parse(text);\nreturn [{\n  json: {\n    title: bug.title || 'Untitled Incident',\n    description: bug.description || '',\n    source: bug.source || 'webhook',\n    reporter: bug.reporter || 'simulator@fixflow.co'\n  }\n}];"
+      },
+      "id": "9d56161a-8e99-4057-848f-f9e07a668c3f",
+      "name": "Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        740,
+        300
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/fixflow/intake",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, description: $json.description, source: $json.source, reporter: $json.reporter }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "67513665-263c-42f3-bf3f-812cc3c220a9",
+      "name": "Dispatch to FixFlow Intake",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1020,
+        300
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "id": "661c02cc-4935-4983-a569-bb5d0496cc02",
+      "name": "Wait 10s",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1300,
+        300
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 17 * * *"
+            }
+          ]
+        }
+      },
+      "id": "7e86b14c-330f-47a2-9cf5-1504a9648a63",
+      "name": "Daily Report Trigger (5 PM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -400,
+        800
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {},
+      "id": "0cde744a-5660-4da1-9707-86e55ab06de0",
+      "name": "Manual Report Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -400,
+        980
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "command": "python3 /Users/santhos/Documents/Projects/FixFlow/scripts/send_daily_report.py"
+      },
+      "id": "62726c8a-6c57-4bd4-89df-e272cd9daa81",
+      "name": "Run Daily Email Report",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [
+        -100,
+        890
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate 5 Scenarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Schedule (6 AM)": {
+      "main": [
+        [
+          {
+            "node": "Generate 5 Scenarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate 5 Scenarios": {
+      "main": [
+        [
+          {
+            "node": "Process One at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process One at a Time": {
+      "main": [
+        [
+          {
+            "node": "Call Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Call Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Parse Gemini Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Gemini Response": {
+      "main": [
+        [
+          {
+            "node": "Dispatch to FixFlow Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch to FixFlow Intake": {
+      "main": [
+        [
+          {
+            "node": "Wait 10s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 10s": {
+      "main": [
+        [
+          {
+            "node": "Process One at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Report Trigger (5 PM)": {
+      "main": [
+        [
+          {
+            "node": "Run Daily Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Report Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Daily Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "pinData": {}
+}

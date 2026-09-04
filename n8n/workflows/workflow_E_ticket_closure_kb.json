@@ -1,0 +1,153 @@
+{
+  "name": "FixFlow — E: Ticket Closure & KB Capture",
+  "_description": "Triggered by Jira webhook when ticket moves to Done. Extracts final resolution, embeds it, stores in KB as pending_review.",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fixflow/jira-done",
+        "options": {}
+      },
+      "id": "jira-webhook",
+      "name": "Jira Done Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst ticketId = body.issue?.key || body.key;\nconst status = body.issue?.fields?.status?.name || body.transition?.to?.name;\nif (!ticketId || status !== 'Done') { return []; }\nreturn [{ json: { jira_ticket_id: ticketId, status, raw: body } }];"
+      },
+      "id": "filter-done",
+      "name": "Filter: Only Done",
+      "type": "n8n-nodes-base.code",
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue/{{ $json.jira_ticket_id }}/comment?orderBy=-created&maxResults=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Basic {{ Buffer.from($env.JIRA_EMAIL + ':' + $env.JIRA_API_TOKEN).toString('base64') }}" }
+          ]
+        }
+      },
+      "id": "fetch-comments",
+      "name": "Jira Fetch Comments",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const comments = $input.first().json.comments || [];\nconst prev = $('Filter: Only Done').first().json;\n\nconst extractText = (body) => {\n  if (!body?.content) return '';\n  return body.content.flatMap(block => block.content || []).filter(n => n.type === 'text').map(n => n.text).join(' ');\n};\n\nconst latestText = comments.length > 0 ? extractText(comments[comments.length - 1].body) : '';\n\nreturn [{ json: { ...prev, final_comment: latestText } }];"
+      },
+      "id": "extract-comment",
+      "name": "Extract Final Comment",
+      "type": "n8n-nodes-base.code",
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/issues?jira_ticket_id=eq.{{ $json.jira_ticket_id }}&select=*",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        }
+      },
+      "id": "fetch-issue",
+      "name": "Fetch Issue from Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const issues = $input.first().json;\nconst prev = $('Extract Final Comment').first().json;\nconst issue = Array.isArray(issues) ? issues[0] : issues;\nconst textToEmbed = `${issue?.title || ''}: ${issue?.description || ''} Resolution: ${prev.final_comment}`;\nreturn [{ json: { ...prev, issue_id: issue?.id, issue_title: issue?.title, issue_description: issue?.description, text_to_embed: textToEmbed } }];"
+      },
+      "id": "build-embed-text",
+      "name": "Build Embed Text",
+      "type": "n8n-nodes-base.code",
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [{\n      \"text\": \"={{ $json.text_to_embed }}\"\n    }]\n  },\n  \"output_dimensionality\": 1536\n}"
+      },
+      "id": "embed-resolution",
+      "name": "Embed Resolution (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const embResp = $input.first().json;\nconst prev = $('Build Embed Text').first().json;\nreturn [{ json: { ...prev, embedding: embResp.embedding.values } }];"
+      },
+      "id": "merge-embedding",
+      "name": "Merge Embedding",
+      "type": "n8n-nodes-base.code",
+      "position": [1720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/knowledge_base",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"issue_title\":\"{{ $json.issue_title }}\",\"description\":\"{{ $json.issue_description }}\",\"fix_steps\":\"{{ $json.final_comment }}\",\"source_issue_id\":\"{{ $json.issue_id }}\",\"review_status\":\"pending_review\",\"embedding\":{{ JSON.stringify($json.embedding) }}}"
+      },
+      "id": "upsert-kb",
+      "name": "Upsert to Knowledge Base",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1940, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/issues?jira_ticket_id=eq.{{ $json.jira_ticket_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"status\":\"closed\",\"resolved_at\":\"{{ new Date().toISOString() }}\"}"
+      },
+      "id": "close-issue",
+      "name": "Mark Issue Closed",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2160, 300]
+    }
+  ],
+  "connections": {
+    "Jira Done Webhook": { "main": [[{ "node": "Filter: Only Done" }]] },
+    "Filter: Only Done": { "main": [[{ "node": "Jira Fetch Comments" }]] },
+    "Jira Fetch Comments": { "main": [[{ "node": "Extract Final Comment" }]] },
+    "Extract Final Comment": { "main": [[{ "node": "Fetch Issue from Supabase" }]] },
+    "Fetch Issue from Supabase": { "main": [[{ "node": "Build Embed Text" }]] },
+    "Build Embed Text": { "main": [[{ "node": "Embed Resolution (Gemini)" }]] },
+    "Embed Resolution (Gemini)": { "main": [[{ "node": "Merge Embedding" }]] },
+    "Merge Embedding": { "main": [[{ "node": "Upsert to Knowledge Base" }]] },
+    "Upsert to Knowledge Base": { "main": [[{ "node": "Mark Issue Closed" }]] }
+  }
+}

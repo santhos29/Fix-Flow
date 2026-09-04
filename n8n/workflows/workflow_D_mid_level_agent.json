@@ -1,0 +1,119 @@
+{
+  "name": "FixFlow — D: Mid-Level Issue Agent",
+  "_description": "Handles 0.65-0.85 similarity. Creates ticket and posts top-3 KB matches as tips.",
+  "nodes": [
+    {
+      "id": "input",
+      "name": "Input from Classifier",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const issue = $input.first().json;\nconst matches = issue.kb_matches || [];\n\nlet tipsText = 'Similar resolved issues found — review before investigating:\\n\\n';\nmatches.forEach((m, i) => {\n  tipsText += `Option ${i+1} (${(m.similarity * 100).toFixed(0)}% match):\\n${m.fix_steps}\\n\\n`;\n});\n\nreturn [{ json: { ...issue, tips_text: tipsText, best_assignee: matches[0]?.assigned_to || 'unassigned' } }];"
+      },
+      "id": "format-tips",
+      "name": "Format Tips",
+      "type": "n8n-nodes-base.code",
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Basic {{ Buffer.from($env.JIRA_EMAIL + ':' + $env.JIRA_API_TOKEN).toString('base64') }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"fields\":{\"project\":{\"key\":\"{{ $env.JIRA_PROJECT_KEY }}\"},\"summary\":\"[MID] {{ $json.title }}\",\"issuetype\":{\"name\":\"Bug\"},\"priority\":{\"name\":\"Medium\"},\"labels\":[\"mid-level\",\"tips-available\"]}}"
+      },
+      "id": "jira-create",
+      "name": "Jira Create Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst prev = $('Format Tips').first().json;\nreturn [{ json: { ...prev, jira_ticket_id: resp.key } }];"
+      },
+      "id": "extract-id",
+      "name": "Extract Ticket ID",
+      "type": "n8n-nodes-base.code",
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue/{{ $json.jira_ticket_id }}/comment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Basic {{ Buffer.from($env.JIRA_EMAIL + ':' + $env.JIRA_API_TOKEN).toString('base64') }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"body\":{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"FixFlow Suggested Solutions (partial match):\",\"marks\":[{\"type\":\"strong\"}]}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"{{ $json.tips_text }}\"}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Similarity score: {{ $json.similarity_score.toFixed(2) }} — human review required.\",\"marks\":[{\"type\":\"em\"}]}]}]}}"
+      },
+      "id": "jira-tips-comment",
+      "name": "Jira Post Tips",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue/{{ $json.jira_ticket_id }}/assignee",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Basic {{ Buffer.from($env.JIRA_EMAIL + ':' + $env.JIRA_API_TOKEN).toString('base64') }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"accountId\":\"{{ $json.best_assignee }}\"}"
+      },
+      "id": "jira-assign",
+      "name": "Jira Assign",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/issues?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"jira_ticket_id\":\"{{ $json.jira_ticket_id }}\",\"status\":\"in_progress\",\"assigned_to\":\"{{ $json.best_assignee }}\"}"
+      },
+      "id": "supabase-update",
+      "name": "Supabase Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1520, 300]
+    }
+  ],
+  "connections": {
+    "Input from Classifier": { "main": [[{ "node": "Format Tips" }]] },
+    "Format Tips": { "main": [[{ "node": "Jira Create Ticket" }]] },
+    "Jira Create Ticket": { "main": [[{ "node": "Extract Ticket ID" }]] },
+    "Extract Ticket ID": { "main": [[{ "node": "Jira Post Tips" }]] },
+    "Jira Post Tips": { "main": [[{ "node": "Jira Assign" }]] },
+    "Jira Assign": { "main": [[{ "node": "Supabase Update" }]] }
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "name": "FixFlow — C: Unknown Issue Agent",
+  "nodes": [
+    {
+      "id": "input",
+      "name": "Input from Classifier",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"You are a senior engineer. Given an unknown issue, provide: 1) Root cause hypothesis 2) 4-6 investigation steps 3) Escalation path. Be concise.\\n\\nTitle: {{ $json.title }}\\nDesc: {{ $json.description }}\"\n    }]\n  }]\n}"
+      },
+      "id": "gpt-analyze",
+      "name": "Gemini Analyze",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const analysis = $input.first().json.candidates[0].content.parts[0].text;\nconst issue = $('Input from Classifier').first().json;\nreturn [{ json: { ...issue, gpt_analysis: analysis } }];"
+      },
+      "id": "merge",
+      "name": "Merge Analysis",
+      "type": "n8n-nodes-base.code",
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Basic {{ Buffer.from($env.JIRA_EMAIL + ':' + $env.JIRA_API_TOKEN).toString('base64') }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"fields\":{\"project\":{\"key\":\"{{ $env.JIRA_PROJECT_KEY }}\"},\"summary\":\"[UNKNOWN] {{ $json.title }}\",\"issuetype\":{\"name\":\"Bug\"},\"priority\":{\"name\":\"High\"},\"labels\":[\"unknown-issue\",\"investigation-needed\"]}}"
+      },
+      "id": "jira-create",
+      "name": "Jira Create Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst prev = $('Merge Analysis').first().json;\nreturn [{ json: { ...prev, jira_ticket_id: resp.key } }];"
+      },
+      "id": "extract-id",
+      "name": "Extract Ticket ID",
+      "type": "n8n-nodes-base.code",
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JIRA_BASE_URL }}/rest/api/3/issue/{{ $json.jira_ticket_id }}/comment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Basic {{ Buffer.from($env.JIRA_EMAIL + ':' + $env.JIRA_API_TOKEN).toString('base64') }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"body\":{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"AI Investigation Suggestions:\"}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"{{ $json.gpt_analysis }}\"}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Please document your final fix as a comment when closing — it will be saved to the knowledge base.\"}]}]}}"
+      },
+      "id": "jira-comment",
+      "name": "Jira Post Steps",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/issues?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"jira_ticket_id\":\"{{ $json.jira_ticket_id }}\",\"status\":\"in_progress\"}"
+      },
+      "id": "supabase-update",
+      "name": "Supabase Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1520, 300]
+    }
+  ],
+  "connections": {
+    "Input from Classifier": { "main": [[{ "node": "Gemini Analyze" }]] },
+    "Gemini Analyze": { "main": [[{ "node": "Merge Analysis" }]] },
+    "Merge Analysis": { "main": [[{ "node": "Jira Create Ticket" }]] },
+    "Jira Create Ticket": { "main": [[{ "node": "Extract Ticket ID" }]] },
+    "Extract Ticket ID": { "main": [[{ "node": "Jira Post Steps" }]] },
+    "Jira Post Steps": { "main": [[{ "node": "Supabase Update" }]] }
+  }
+}

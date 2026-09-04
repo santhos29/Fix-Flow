@@ -1,0 +1,52 @@
+{
+  "name": "FixFlow — AI Software Team Simulator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 /Users/santhos/Documents/Projects/FixFlow/scripts/simulate_team.py --count 5"
+      },
+      "id": "execute-command",
+      "name": "Run Team Simulation",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [
+        450,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Team Simulation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

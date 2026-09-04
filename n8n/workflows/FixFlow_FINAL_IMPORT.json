@@ -1,0 +1,1444 @@
+{
+  "updatedAt": "2026-05-25T12:26:55.417Z",
+  "createdAt": "2026-05-19T14:50:41.049Z",
+  "id": "9vhRwIIs2ObGlULD",
+  "name": "FixFlow — MASTER (Connected)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fixflow/intake",
+        "options": {}
+      },
+      "id": "d0efd59e-d49e-4eb0-9d53-3e871908faf2",
+      "name": "Webhook Intake",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -12960,
+        13536
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "63ee6369-27c4-45f9-99c1-a53360d3fa1e"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d9487b7-5db1-4e7a-9a99-923f66c9ff99",
+              "name": "title",
+              "value": "={{ $json.body.title || 'Untitled Issue' }}",
+              "type": "string"
+            },
+            {
+              "id": "9f1437b7-5db1-4e7a-9a99-923f66c9ff99",
+              "name": "description",
+              "value": "={{ $json.body.description || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "1f1437b7-5db1-4e7a-9a99-923f66c9ff99",
+              "name": "source",
+              "value": "webhook",
+              "type": "string"
+            },
+            {
+              "id": "3f1437b7-5db1-4e7a-9a99-923f66c9ff99",
+              "name": "raw_payload",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da35088c-0862-45c8-92e6-d92a802839ad",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12736,
+        13536
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=AIzaSyA3Vw4yBx2Q22p8C2XoMVRgLY4G-mbQdQU",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": \"models/gemini-embedding-001\", \"content\": { \"parts\": [{ \"text\": $json.title + ': ' + $json.description }] }, \"output_dimensionality\": 1536 } }}",
+        "options": {}
+      },
+      "id": "1e2042f8-fa1c-41ba-8bce-aa21b726a855",
+      "name": "Embed Issue (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12512,
+        13536
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://skbbmddylglzcujgajqw.supabase.co/rest/v1/rpc/match_issues",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"query_embedding\": $json.embedding.values, \"match_threshold\": 0.0, \"match_count\": 1 } }}",
+        "options": {}
+      },
+      "id": "88eef008-5acc-432b-aabb-0250ee404099",
+      "name": "Vector Search (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12288,
+        13536
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ca-01",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Normalize Payload').first().json.title }}"
+            },
+            {
+              "id": "ca-02",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $('Normalize Payload').first().json.description }}"
+            },
+            {
+              "id": "ca-03",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $('Normalize Payload').first().json.source }}"
+            },
+            {
+              "id": "ca-04",
+              "name": "raw_payload",
+              "type": "object",
+              "value": "={{ $('Normalize Payload').first().json.raw_payload }}"
+            },
+            {
+              "id": "ca-05",
+              "name": "embedding",
+              "type": "object",
+              "value": "={{ $('Embed Issue (Gemini)').first().json.embedding }}"
+            },
+            {
+              "id": "ca-06",
+              "name": "similarity_score",
+              "type": "number",
+              "value": "={{ $json.similarity !== undefined ? $json.similarity : 0 }}"
+            },
+            {
+              "id": "ca-07",
+              "name": "kb_matches",
+              "type": "object",
+              "value": "={{ $json }}"
+            },
+            {
+              "id": "ca-08",
+              "name": "agent_type",
+              "type": "string",
+              "value": "={{ $json.similarity >= 0.85 ? 'known' : ($json.similarity >= 0.65 ? 'mid' : 'unknown') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d6fe84d0-3571-4c83-b023-c661106efd33",
+      "name": "Classify Agent Type",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12080,
+        13536
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://skbbmddylglzcujgajqw.supabase.co/rest/v1/issues",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"title\": $json.title, \"description\": $json.description, \"source\": $json.source, \"agent_type\": $json.agent_type, \"similarity_score\": $json.similarity_score, \"tags\": $json.tags, \"raw_payload\": $json.raw_payload } }}",
+        "options": {}
+      },
+      "id": "a20b478d-3bb2-4a82-a683-3a83a3cd4150",
+      "name": "Log Issue to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11856,
+        13536
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "route-known-cond",
+              "leftValue": "={{ $json.agent_type }}",
+              "rightValue": "known",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "8197c73d-e544-4d38-9c21-a531bd91e582",
+      "name": "Route: Known?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -11632,
+        13424
+      ],
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "route-mid-cond",
+              "leftValue": "={{ $json.agent_type }}",
+              "rightValue": "mid",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "25f51f49-50d5-430d-aa4d-9adccabd000c",
+      "name": "Route: Mid?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -11632,
+        13632
+      ],
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://santhosk738.atlassian.net/rest/api/3/issue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"fields\": { \"project\": { \"key\": \"EPL\" }, \"summary\": \"[KNOWN] \" + ($json[0] ? $json[0].title : $json.title), \"description\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": ($json[0] ? $json[0].description : $json.description) || \"No description.\" }] }] }, \"issuetype\": { \"name\": \"Task\" }, \"priority\": { \"name\": \"Medium\" }, \"labels\": [\"auto-managed\", \"known-issue\"] } } }}",
+        "options": {}
+      },
+      "id": "8637fecc-b56f-4ae1-9b4f-7b59016f3aef",
+      "name": "Jira: Create Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12736,
+        13728
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "et1-01",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.title }}"
+            },
+            {
+              "id": "et1-02",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.description }}"
+            },
+            {
+              "id": "et1-03",
+              "name": "agent_type",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.agent_type }}"
+            },
+            {
+              "id": "et1-04",
+              "name": "similarity_score",
+              "type": "number",
+              "value": "={{ $('Classify Agent Type').first().json.similarity_score }}"
+            },
+            {
+              "id": "et1-05",
+              "name": "kb_matches",
+              "type": "object",
+              "value": "={{ $('Classify Agent Type').first().json.kb_matches }}"
+            },
+            {
+              "id": "et1-06",
+              "name": "jira_ticket_id",
+              "type": "string",
+              "value": "={{ $json.key }}"
+            },
+            {
+              "id": "et1-07",
+              "name": "jira_ticket_url",
+              "type": "string",
+              "value": "=https://santhosk738.atlassian.net/browse/{{ $json.key }}"
+            },
+            {
+              "id": "et1-08",
+              "name": "fix_steps",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.kb_matches ? $('Classify Agent Type').first().json.kb_matches.fix_steps : '' }}"
+            },
+            {
+              "id": "et1-09",
+              "name": "kb_assigned_to",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.kb_matches ? $('Classify Agent Type').first().json.kb_matches.assigned_to : '' }}"
+            },
+            {
+              "id": "etk-sid",
+              "name": "supabase_id",
+              "type": "string",
+              "value": "={{ $('Log Issue to Supabase').first().json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2cd5cc87-f2a3-4f8f-b09a-ac4f92bb300e",
+      "name": "Extract Ticket ID (Known)",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12512,
+        13728
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $json.jira_ticket_id }}/comment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"body\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": \"🤖 FixFlow Auto-Resolution\", \"marks\": [{\"type\":\"strong\"}] }] }, { \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": $json.fix_steps || \"Refer to the knowledge base for resolution steps.\" }] } ] } } }}",
+        "options": {}
+      },
+      "id": "41ebcaf2-6055-441a-a347-6023f14979a3",
+      "name": "Jira: Post Solution Comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12288,
+        13728
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $('Extract Ticket ID (Known)').first().json.jira_ticket_id }}/assignee",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"accountId\": \"712020:8f01e866-879c-4894-95da-74c2a273a51c\" } }}",
+        "options": {}
+      },
+      "id": "39fdc0a9-80cc-47a2-a81c-a6eec19d3b49",
+      "name": "Jira: Assign Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12080,
+        13728
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $('Extract Ticket ID (Known)').first().json.jira_ticket_id }}/transitions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"transition\": { \"id\": \"21\" } } }}",
+        "options": {}
+      },
+      "id": "639105a4-6cf2-4708-9e3c-92658468f2a9",
+      "name": "Jira: Move to In Progress",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11856,
+        13728
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://skbbmddylglzcujgajqw.supabase.co/rest/v1/issues?id=eq.{{ $('Extract Ticket ID (Known)').first().json.supabase_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"jira_ticket_id\": $('Extract Ticket ID (Known)').first().json.jira_ticket_id, \"jira_ticket_url\": $('Extract Ticket ID (Known)').first().json.jira_ticket_url, \"status\": \"closed\", \"assigned_to\": ($('Extract Ticket ID (Known)').first().json.title && $('Extract Ticket ID (Known)').first().json.title.toLowerCase().includes('[database]')) ? 'Sanjay Dutt (DB Architect)' : ($('Extract Ticket ID (Known)').first().json.title && $('Extract Ticket ID (Known)').first().json.title.toLowerCase().includes('[devops]')) ? 'Chloe Dupont (DevOps Lead)' : ($('Extract Ticket ID (Known)').first().json.title && ($('Extract Ticket ID (Known)').first().json.title.toLowerCase().includes('[frontend]') || $('Extract Ticket ID (Known)').first().json.title.toLowerCase().includes('[auth]'))) ? 'Marcus Vance (Frontend Eng)' : 'Rajesh Kumar (API Engineer)' } }}",
+        "options": {}
+      },
+      "id": "6bd4d2a7-cb9d-4aca-a1b4-e3253aed8c6a",
+      "name": "Supabase: Update Issue Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11344,
+        13760
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA3Vw4yBx2Q22p8C2XoMVRgLY4G-mbQdQU",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"contents\": [{ \"parts\": [{ \"text\": \"You are a senior engineer. Analyze this issue and provide 1) Root cause 2) 4-6 investigation steps 3) Escalation path.\\n\\nTitle: \" + $json.title + \"\\nDescription: \" + $json.description }] }] } }}",
+        "options": {}
+      },
+      "id": "09902ae8-51d5-4da3-9d96-929eb8053783",
+      "name": "Gemini Analyze",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12736,
+        13936
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ma-01",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.title }}"
+            },
+            {
+              "id": "ma-02",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.description }}"
+            },
+            {
+              "id": "ma-03",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.source }}"
+            },
+            {
+              "id": "ma-04",
+              "name": "agent_type",
+              "type": "string",
+              "value": "={{ $('Classify Agent Type').first().json.agent_type }}"
+            },
+            {
+              "id": "ma-05",
+              "name": "kb_matches",
+              "type": "object",
+              "value": "={{ $('Classify Agent Type').first().json.kb_matches }}"
+            },
+            {
+              "id": "ma-06",
+              "name": "similarity_score",
+              "type": "number",
+              "value": "={{ $('Classify Agent Type').first().json.similarity_score }}"
+            },
+            {
+              "id": "ma-07",
+              "name": "gpt_analysis",
+              "type": "string",
+              "value": "={{ $json.candidates[0].content.parts[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd38956a-6626-4303-8ab4-8ed210fb8417",
+      "name": "Merge Analysis",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12512,
+        13936
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://santhosk738.atlassian.net/rest/api/3/issue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"fields\": { \"project\": { \"key\": \"EPL\" }, \"summary\": \"[UNKNOWN] \" + $json.title, \"description\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": $json.description || \"No description.\" }] }] }, \"issuetype\": { \"name\": \"Task\" }, \"priority\": { \"name\": \"High\" } } } }}",
+        "options": {}
+      },
+      "id": "b8e24164-028c-45e7-896d-b9155b3602e0",
+      "name": "Jira Create Ticket (Unknown)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12288,
+        13936
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "et2-01",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Merge Analysis').first().json.title }}"
+            },
+            {
+              "id": "et2-02",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $('Merge Analysis').first().json.description }}"
+            },
+            {
+              "id": "et2-03",
+              "name": "agent_type",
+              "type": "string",
+              "value": "={{ $('Merge Analysis').first().json.agent_type }}"
+            },
+            {
+              "id": "et2-04",
+              "name": "gpt_analysis",
+              "type": "string",
+              "value": "={{ $('Merge Analysis').first().json.gpt_analysis }}"
+            },
+            {
+              "id": "et2-05",
+              "name": "jira_ticket_id",
+              "type": "string",
+              "value": "={{ $json.key }}"
+            },
+            {
+              "id": "et2-06",
+              "name": "jira_ticket_url",
+              "type": "string",
+              "value": "=https://santhosk738.atlassian.net/browse/{{ $json.key }}"
+            },
+            {
+              "id": "etu-sid",
+              "name": "supabase_id",
+              "type": "string",
+              "value": "={{ $('Log Issue to Supabase').first().json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e8fc6e2d-a252-4223-9c61-57000c6b0d01",
+      "name": "Extract Ticket ID (Unknown)",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12080,
+        13936
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $json.jira_ticket_id }}/comment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"body\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": \"🔍 AI Investigation Suggestions\", \"marks\": [{\"type\":\"strong\"}] }] }, { \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": $json.gpt_analysis || \"No AI analysis available.\" }] } ] } } }}",
+        "options": {}
+      },
+      "id": "0eb88a65-6b91-4bcc-9ad2-a3f61201d7b7",
+      "name": "Jira Post Steps",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11856,
+        13936
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://skbbmddylglzcujgajqw.supabase.co/rest/v1/issues?id=eq.{{ $('Extract Ticket ID (Unknown)').first().json.supabase_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"jira_ticket_id\": $('Extract Ticket ID (Unknown)').first().json.jira_ticket_id, \"jira_ticket_url\": $('Extract Ticket ID (Unknown)').first().json.jira_ticket_url, \"status\": \"in_progress\", \"assigned_to\": 'Alex Mercer (Product Manager)' } }}",
+        "options": {}
+      },
+      "id": "1c343a67-2a3a-4deb-af3b-e2957187f94c",
+      "name": "Supabase Update (Unknown)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11632,
+        13936
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ft-01",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "id": "ft-02",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $json.description }}"
+            },
+            {
+              "id": "ft-03",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $json.source }}"
+            },
+            {
+              "id": "ft-04",
+              "name": "agent_type",
+              "type": "string",
+              "value": "={{ $json.agent_type }}"
+            },
+            {
+              "id": "ft-05",
+              "name": "kb_matches",
+              "type": "object",
+              "value": "={{ $json.kb_matches }}"
+            },
+            {
+              "id": "ft-06",
+              "name": "similarity_score",
+              "type": "number",
+              "value": "={{ $json.similarity_score }}"
+            },
+            {
+              "id": "ft-07",
+              "name": "best_assignee",
+              "type": "string",
+              "value": "={{ ($json.title && $json.title.toLowerCase().includes('[database]')) ? 'Sanjay Dutt (DB Architect)' : ($json.title && $json.title.toLowerCase().includes('[devops]')) ? 'Chloe Dupont (DevOps Lead)' : ($json.title && ($json.title.toLowerCase().includes('[frontend]') || $json.title.toLowerCase().includes('[ui]') || $json.title.toLowerCase().includes('[auth]'))) ? 'Marcus Vance (Frontend Eng)' : ($json.title && $json.title.toLowerCase().includes('[automation]')) ? 'Daniel Park (SDET)' : ($json.title && ($json.title.toLowerCase().includes('[known]') || $json.title.toLowerCase().includes('[mid]'))) ? 'Rajesh Kumar (API Engineer)' : ($json.title && ($json.title.toLowerCase().includes('[facilities]') || $json.title.toLowerCase().includes('[unknown]'))) ? 'Alex Mercer (Product Manager)' : 'Rajesh Kumar (API Engineer)' }}"
+            },
+            {
+              "id": "ft-08",
+              "name": "tips_text",
+              "type": "string",
+              "value": "={{ 'Similar resolved issue found:\\n\\n' + ($json.kb_matches && $json.kb_matches.fix_steps ? $json.kb_matches.fix_steps : 'Check the knowledge base for similar issues.') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "28044423-3c85-4755-936f-2a31a505fe18",
+      "name": "Format Tips",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12736,
+        14128
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://santhosk738.atlassian.net/rest/api/3/issue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"fields\": { \"project\": { \"key\": \"EPL\" }, \"summary\": \"[MID] \" + $json.title, \"description\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": $json.description || \"No description.\" }] }] }, \"issuetype\": { \"name\": \"Task\" }, \"priority\": { \"name\": \"Medium\" } } } }}",
+        "options": {}
+      },
+      "id": "c759ad59-a151-41d5-a45b-d34ec0c28878",
+      "name": "Jira Create Ticket (Mid)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12512,
+        14128
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "et3-01",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Format Tips').first().json.title }}"
+            },
+            {
+              "id": "et3-02",
+              "name": "description",
+              "type": "string",
+              "value": "={{ $('Format Tips').first().json.description }}"
+            },
+            {
+              "id": "et3-03",
+              "name": "agent_type",
+              "type": "string",
+              "value": "={{ $('Format Tips').first().json.agent_type }}"
+            },
+            {
+              "id": "et3-04",
+              "name": "best_assignee",
+              "type": "string",
+              "value": "={{ $('Format Tips').first().json.best_assignee }}"
+            },
+            {
+              "id": "et3-05",
+              "name": "tips_text",
+              "type": "string",
+              "value": "={{ $('Format Tips').first().json.tips_text }}"
+            },
+            {
+              "id": "et3-06",
+              "name": "jira_ticket_id",
+              "type": "string",
+              "value": "={{ $json.key }}"
+            },
+            {
+              "id": "et3-07",
+              "name": "jira_ticket_url",
+              "type": "string",
+              "value": "=https://santhosk738.atlassian.net/browse/{{ $json.key }}"
+            },
+            {
+              "id": "etm-sid",
+              "name": "supabase_id",
+              "type": "string",
+              "value": "={{ $('Log Issue to Supabase').first().json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4e0a5b74-43f6-4fe9-b07f-dcfb378176b3",
+      "name": "Extract Ticket ID (Mid)",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -12288,
+        14128
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $json.jira_ticket_id }}/comment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"body\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": \"💡 Similar Issues Found\", \"marks\": [{\"type\":\"strong\"}] }] }, { \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": $json.tips_text || \"Check the knowledge base for similar issues.\" }] } ] } } }}",
+        "options": {}
+      },
+      "id": "77f0b74d-4478-4329-9c81-9cd0db9ad4b8",
+      "name": "Jira Post Tips",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -12080,
+        14128
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $('Extract Ticket ID (Unknown)').first().json.jira_ticket_id }}/assignee",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"accountId\": \"712020:8f01e866-879c-4894-95da-74c2a273a51c\" } }}",
+        "options": {}
+      },
+      "id": "612a637d-3ef6-4d9d-b8f2-862b8e49620f",
+      "name": "Jira Assign (Unknown)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11456,
+        14256
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://skbbmddylglzcujgajqw.supabase.co/rest/v1/issues?id=eq.{{ $('Extract Ticket ID (Mid)').first().json.supabase_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrYmJtZGR5bGdsemN1amdhanF3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzU0OTgyMiwiZXhwIjoyMDkzMTI1ODIyfQ.ehRI-9FPPv9ntPeRtxI4qFXRQJ6zEydyk4XZm7JmKok"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"jira_ticket_id\": $('Extract Ticket ID (Mid)').first().json.jira_ticket_id, \"jira_ticket_url\": $('Extract Ticket ID (Mid)').first().json.jira_ticket_url, \"status\": \"in_progress\", \"assigned_to\": $('Extract Ticket ID (Mid)').first().json.best_assignee || 'Rajesh Kumar (API Engineer)' } }}",
+        "options": {}
+      },
+      "id": "243f6e9c-23fd-4d92-bdb0-b18ec0a037d4",
+      "name": "Supabase Update (Mid)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11632,
+        14128
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $('Extract Ticket ID (Known)').first().json.jira_ticket_id }}/transitions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"transition\": { \"id\": \"31\" } } }}",
+        "options": {}
+      },
+      "id": "d3a9c3ad-59d1-4404-bde9-ef6f33837665",
+      "name": "Jira: Move to Done",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11648,
+        13776
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $('Extract Ticket ID (Unknown)').first().json.jira_ticket_id }}/transitions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"transition\": { \"id\": \"21\" } } }}",
+        "options": {}
+      },
+      "id": "698c2ce3-f62e-4c5e-8f18-57ec7d2ca773",
+      "name": "Jira Move In Progress (Unknown)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11856,
+        14128
+      ],
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://santhosk738.atlassian.net/rest/api/3/issue/{{ $('Extract Ticket ID (Mid)').first().json.jira_ticket_id }}/assignee",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic c2FudGhvc2s3MzhAZ21haWwuY29tOkFUQVRUM3hGZkdGMERrRE1lQzdxQTdTRGxPRE5aOG8tMlpCRDlLMG81cFJUd2M3UTYxNm1kRzlBd09hTVhyaDZXdHhZVGhFdm82MWttVjNIMUE3Tkt3SzEwV1I2RkJFMm0wQ29qWldRVzloeXAtbF9Ta25ZNUMxRTlzelZlNmRFd185MDRQTWF0U1Rwa2tLdEVPMkZjWTB0andnVUJOTzJ3YkJoNXZrRVpWbTBBTXpoT3BLdnFVOD1BQ0I5RTNFNA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"accountId\": \"712020:8f01e866-879c-4894-95da-74c2a273a51c\" } }}",
+        "options": {}
+      },
+      "id": "fa715106-ebd6-45d3-a1f9-0bd14d9d3c00",
+      "name": "Jira Assign (Mid)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -11824,
+        14288
+      ],
+      "typeVersion": 4.4
+    }
+  ],
+  "connections": {
+    "Webhook Intake": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Embed Issue (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Issue (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Vector Search (Supabase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Search (Supabase)": {
+      "main": [
+        [
+          {
+            "node": "Classify Agent Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Agent Type": {
+      "main": [
+        [
+          {
+            "node": "Log Issue to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Issue to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Route: Known?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira: Create Ticket": {
+      "main": [
+        [
+          {
+            "node": "Extract Ticket ID (Known)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira: Post Solution Comment": {
+      "main": [
+        [
+          {
+            "node": "Jira: Assign Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira: Assign Ticket": {
+      "main": [
+        [
+          {
+            "node": "Jira: Move to In Progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira: Move to In Progress": {
+      "main": [
+        [
+          {
+            "node": "Jira: Move to Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Analyze": {
+      "main": [
+        [
+          {
+            "node": "Merge Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Analysis": {
+      "main": [
+        [
+          {
+            "node": "Jira Create Ticket (Unknown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Post Steps": {
+      "main": [
+        [
+          {
+            "node": "Jira Assign (Unknown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Tips": {
+      "main": [
+        [
+          {
+            "node": "Jira Create Ticket (Mid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Post Tips": {
+      "main": [
+        [
+          {
+            "node": "Jira Assign (Mid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Known?": {
+      "main": [
+        [
+          {
+            "node": "Jira: Create Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route: Mid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Mid?": {
+      "main": [
+        [
+          {
+            "node": "Format Tips",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gemini Analyze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Ticket ID (Known)": {
+      "main": [
+        [
+          {
+            "node": "Jira: Post Solution Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Create Ticket (Mid)": {
+      "main": [
+        [
+          {
+            "node": "Extract Ticket ID (Mid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Ticket ID (Mid)": {
+      "main": [
+        [
+          {
+            "node": "Jira Post Tips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Assign (Mid)": {
+      "main": [
+        [
+          {
+            "node": "Supabase Update (Mid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Create Ticket (Unknown)": {
+      "main": [
+        [
+          {
+            "node": "Extract Ticket ID (Unknown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Ticket ID (Unknown)": {
+      "main": [
+        [
+          {
+            "node": "Jira Post Steps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Assign (Unknown)": {
+      "main": [
+        [
+          {
+            "node": "Jira Move In Progress (Unknown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira: Move to Done": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Issue Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira Move In Progress (Unknown)": {
+      "main": [
+        [
+          {
+            "node": "Supabase Update (Unknown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "cff54ff0-d326-4fd7-b249-276727162271",
+  "activeVersionId": "93b91f83-a351-42ba-8dda-0608edf3ff87",
+  "versionCounter": 128,
+  "triggerCount": 1,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-05-19T14:50:41.054Z",
+      "createdAt": "2026-05-19T14:50:41.054Z",
+      "role": "workflow:owner",
+      "workflowId": "9vhRwIIs2ObGlULD",
+      "projectId": "t01NkirdZ6OpSBY1",
+      "project": {
+        "updatedAt": "2026-05-19T14:50:21.080Z",
+        "createdAt": "2026-05-19T14:49:44.441Z",
+        "id": "t01NkirdZ6OpSBY1",
+        "name": "SANTHOS S <santhosk738@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "40e3b40c-1a9f-4831-beff-fd4615174e47"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
