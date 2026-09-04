@@ -46,24 +46,21 @@ Incident arrives → Semantic classification → Agent routing → Autonomous re
 ---
 
 ## Live Demo
+<h1>
+  Known Issue
+  <img width="1223" height="671" alt="Screenshot 2026-09-04 at 11 37 45 PM" src="https://github.com/user-attachments/assets/c7761e66-a64b-4b3b-8f7e-04b71747e590" />
 
-### Simulation Scenarios
+</h1>
 
-> Click any thumbnail to watch the 10-second scenario demo
+<h1>
+  Mid-Level Issue
+ <img width="1437" height="787" alt="Screenshot 2026-09-04 at 10 58 08 PM" src="https://github.com/user-attachments/assets/cbcee7fe-2bdd-44d6-a6a3-0964b7d7667a" />
+</h1>
 
-<br/>
-
-| Scenario | Preview | Description |
-|:---|:---:|:---|
-| **Known — Auto-resolve** | <!-- Add your video/gif here: ![Known](./docs/demo-known.gif) --> `📹 demo-known.mp4` | VPN auth timeout resolved autonomously in 1.88s. Zero human intervention. |
-| **Mid-level — Human gate** | <!-- Add your video/gif here: ![Mid](./docs/demo-mid.gif) --> `📹 demo-mid.mp4` | DB connection pool exhaustion. Human approval gate fires before patch applies. |
-| **Unknown — Multi-agent** | <!-- Add your video/gif here: ![Unknown](./docs/demo-unknown.gif) --> `📹 demo-unknown.mp4` | Cross-cluster deadlock. Marcus + Arjun collaborate, Elena approves. KB-1250 created. |
-| **Graceful failure** | <!-- Add your video/gif here: ![Fail](./docs/demo-fail.gif) --> `📹 demo-fail.mp4` | Cryptographic anomaly below confidence threshold. System refuses to automate safely. |
-| **Closed-loop replay** | <!-- Add your video/gif here: ![Replay](./docs/demo-replay.gif) --> `📹 demo-replay.mp4` | Same deadlock re-ingested. Score jumps 0.41 → 0.94. Resolves in seconds. |
-
-> **To embed videos in GitHub README:** Convert each `.mp4` to `.gif` using FFmpeg or upload to GitHub and reference with `![demo](URL)`. Alternatively, link to a hosted demo: [**→ Live Demo**](https://your-demo-url.com)
-
----
+<h1>
+  Unknown Issue
+   <img width="1228" height="713" alt="Screenshot 2026-09-04 at 11 30 28 PM" src="https://github.com/user-attachments/assets/a99f73de-055b-47dd-adab-9eb8ba9cdef0" />
+</h1>
 
 ## Key Features
 
