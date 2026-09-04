@@ -1,4 +1,4 @@
-# FixFlow — Autonomous Corrective Maintenance System
+# FixFlow : Autonomous Corrective Maintenance System
 
 > **An agentic AI operations console for real-time incident orchestration, multi-agent autonomous troubleshooting, and self-reinforcing knowledge accumulation.**
 
@@ -60,6 +60,12 @@ Incident arrives → Semantic classification → Agent routing → Autonomous re
 <h1>
   Unknown Issue
    <img width="1228" height="713" alt="Screenshot 2026-09-04 at 11 30 28 PM" src="https://github.com/user-attachments/assets/a99f73de-055b-47dd-adab-9eb8ba9cdef0" />
+</h1>
+
+<h1>
+  n8n FixFlow Workflow
+  <img width="938" height="495" alt="Screenshot 2026-09-04 at 11 31 48 PM" src="https://github.com/user-attachments/assets/f2ee7cb2-14ac-4b75-8bc1-c4227b4bcabe" />
+
 </h1>
 
 ## Key Features
@@ -321,55 +327,7 @@ JIRA_PROJECT_KEY=MAINT
 ```
 
 > **Security note:** Never commit `.env` to version control. Add it to `.gitignore`. Run `chmod 600 .env` to restrict file permissions.
-
----
-
-## Project Structure
-
-```
-fixflow/
-├── dashboard/              # Next.js frontend — operations floor and analytics
-│   ├── app/                # App router pages and API routes
-│   ├── components/         # PixiJS floor, agent personas, terminal, modals
-│   └── public/             # Static assets
-├── workflows/              # n8n exported workflow JSON files
-├── scripts/                # Python automation scripts
-│   ├── simulate_team.py    # Synthetic issue generator
-│   ├── send_daily_report.py# HTML email operations summary
-│   ├── backdate_issues.py  # Historical data distribution
-│   └── fix_stuck_issues.py # Legacy issue status repair
-├── docs/                   # Architecture diagrams and demo assets
-│   ├── architecture.png    # System architecture diagram (replace with yours)
-│   └── demo-*.mp4          # 10-second scenario demo videos
-├── docker-compose.yml      # n8n + supporting services
-├── .env.example            # Environment variable template
-└── README.md
-```
-
----
-
-## Research
-
-FixFlow is accompanied by a peer-reviewed research paper submitted to a Q1 software engineering journal:
-
-> **FixFlow: A Self-Reinforcing Multi-Agent Framework for Autonomous Corrective Software Maintenance**
-> *[Author Name] · [Institution] · Tamil Nadu, India · 2025*
-
-Key findings from the four-week pilot evaluation:
-
-| Metric | Result |
-|:---|:---|
-| Known issue resolution time | 4.2 hrs → 18 min (93% reduction) |
-| Classifier accuracy (F1) | 91.4% |
-| Autonomous ticket closure rate | 87.3% |
-| False auto-closure rate | 3.1% (declining to 1.4% by week 4) |
-| Knowledge base growth | 38 → 142 entries in 4 weeks (+274%) |
-| Developer satisfaction | 3.1 / 5 → 4.4 / 5 |
-
-The closed-loop replay scenario (Scenario 5) demonstrates the core research finding empirically: a novel incident requiring 18.2 hours of senior investigation in week one was resolved autonomously in 22 minutes in week three, after its resolution was indexed into the knowledge base.
-
----
-
+----
 ## License
 
 MIT License — see [LICENSE](./LICENSE) for details.
