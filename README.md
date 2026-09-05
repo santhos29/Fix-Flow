@@ -25,8 +25,6 @@
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Project Structure](#project-structure)
-- [Research](#research)
 - [License](#license)
 
 ---
@@ -325,8 +323,6 @@ JIRA_EMAIL=your-email@company.com
 JIRA_API_TOKEN=your_atlassian_api_token
 JIRA_PROJECT_KEY=MAINT
 ```
-
-> **Security note:** Never commit `.env` to version control. Add it to `.gitignore`. Run `chmod 600 .env` to restrict file permissions.
 ----
 ## License
 
@@ -336,4 +332,17 @@ MIT License — see [LICENSE](./LICENSE) for details.
 
 <p align="center">
   Built with precision · Designed for autonomy · Gets smarter with every incident
+  <p align="center">
+  <img src="https://img.shields.io/badge/n8n-EA4B71?style=for-the-badge&logo=n8n&logoColor=white" alt="n8n"/>
+  <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/>
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"/>
+  <img src="https://img.shields.io/badge/PixiJS-E91E8C?style=for-the-badge&logo=pixi.js&logoColor=white" alt="PixiJS"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/Jira-0052CC?style=for-the-badge&logo=jira&logoColor=white" alt="Jira"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/>
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Gemini"/>
 </p>
+</p>
+
