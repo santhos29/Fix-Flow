@@ -5,7 +5,8 @@
 <br/>
 
 <!-- Replace the placeholder below with your architecture diagram image -->
-![FixFlow System Architecture](./docs/fixflow_conslidated_arch.drawio.png)
+<img width="788" height="922" alt="FixFlow_architecture drawio" src="https://github.com/user-attachments/assets/782a88dc-c9d0-4cff-9e2c-a85ad8a36e8d" />
+
 
 <br/>
 
